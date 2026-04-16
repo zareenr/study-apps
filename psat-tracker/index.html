@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSAT Study Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PSAT Tracker">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e28; --border:#252a38;
+    --eng:#e8a87c; --math:#7cb9e8; --both:#a87ce8; --gold:#e8d07c; --green:#7ce8a0; --red:#e87c8a;
+    --text:#e8e6e0; --muted:#7a7d8a; --dim:#484d5f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+  /* NAV */
+  nav{position:sticky;top:0;z-index:100;background:rgba(13,15,20,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:54px}
+  .nav-brand{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
+  .nav-right{display:flex;align-items:center;gap:16px}
+  .streak-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--green);background:rgba(124,232,160,.1);border:1px solid rgba(124,232,160,.2);border-radius:6px;padding:4px 10px}
+  .exam-badge{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);background:rgba(232,208,124,.08);border:1px solid rgba(232,208,124,.2);border-radius:6px;padding:4px 10px}
+
+  /* LAYOUT */
+  .container{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:36px 24px 100px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+  /* TODAY CARD */
+  .today-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px 28px;margin-bottom:24px;animation:fadeUp .5s ease both;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .today-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .today-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+  .today-meta{font-size:13px;color:var(--muted)}
+  .today-actions{display:flex;gap:10px;flex-shrink:0}
+  .btn{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;border-radius:8px;border:1px solid;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn-complete{color:var(--green);border-color:rgba(124,232,160,.3);background:rgba(124,232,160,.06)}
+  .btn-complete:hover{background:rgba(124,232,160,.14);border-color:var(--green)}
+  .btn-miss{color:var(--red);border-color:rgba(232,124,138,.3);background:rgba(232,124,138,.06)}
+  .btn-miss:hover{background:rgba(232,124,138,.14);border-color:var(--red)}
+  .btn-reschedule{color:var(--gold);border-color:rgba(232,208,124,.3);background:rgba(232,208,124,.06)}
+  .btn-reschedule:hover{background:rgba(232,208,124,.14);border-color:var(--gold)}
+
+  /* STAT ROW */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;animation:fadeUp .5s .1s ease both}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+  .stat-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .stat-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;line-height:1}
+  .stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* PHASE TABS */
+  .phase-tabs{display:flex;gap:6px;margin-bottom:18px;animation:fadeUp .5s .15s ease both;flex-wrap:wrap}
+  .phase-tab{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+  .phase-tab:hover{color:var(--text);border-color:var(--dim)}
+  .phase-tab.active{background:var(--surface2);border-color:var(--dim);color:var(--text)}
+
+  /* MISSED SESSIONS */
+  .missed-section{background:rgba(232,124,138,.05);border:1px solid rgba(232,124,138,.2);border-radius:14px;padding:20px 24px;margin-bottom:20px}
+  .missed-header{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--red);margin-bottom:14px}
+  .missed-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(232,124,138,.1);gap:12px;flex-wrap:wrap}
+  .missed-item:last-child{border-bottom:none}
+  .missed-info{font-size:13px;color:var(--text)}
+  .missed-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:2px}
+
+  /* SESSION LIST */
+  .phase-panel{display:none;animation:fadeUp .35s ease both}
+  .phase-panel.active{display:block}
+  .week-group{margin-bottom:20px}
+  .week-header{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;justify-content:space-between}
+  .week-progress-text{color:var(--dim)}
+
+  .session-row{display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface);margin-bottom:8px;transition:all .2s;cursor:pointer}
+  .session-row:hover{border-color:var(--dim)}
+  .session-row.complete{opacity:.55;border-color:rgba(124,232,160,.2);background:rgba(124,232,160,.03)}
+  .session-row.complete .session-title{text-decoration:line-through;color:var(--muted)}
+  .session-row.missed{border-color:rgba(232,124,138,.25);background:rgba(232,124,138,.04)}
+  .session-row.today-row{border-color:var(--gold);background:rgba(232,208,124,.04)}
+  .session-row.rescheduled{border-color:rgba(232,208,124,.25);background:rgba(232,208,124,.03)}
+  .session-row.rescheduled .check-box{border-color:var(--gold);color:var(--gold)}
+
+  /* RESCHEDULE MODAL */
+  #rescheduleModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:28px;max-width:380px;width:100%;animation:fadeUp .25s ease}
+  .modal-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+  .modal-input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 14px;width:100%;outline:none;transition:border-color .2s}
+  .modal-input:focus{border-color:var(--gold)}
+
+  .check-box{width:20px;height:20px;border-radius:5px;border:2px solid var(--dim);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .session-row.complete .check-box{background:var(--green);border-color:var(--green);color:var(--bg)}
+  .session-row.missed .check-box{background:var(--red);border-color:var(--red);color:var(--bg)}
+  .check-icon{font-size:12px;font-weight:700}
+
+  .session-info{flex:1;min-width:0}
+  .session-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:2px}
+  .session-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .session-dur{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);flex-shrink:0}
+
+  .type-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .dot-eng{background:var(--eng)} .dot-math{background:var(--math)} .dot-both{background:var(--both)} .dot-rest{background:var(--dim)}
+
+  /* SCORE LOG */
+  .score-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 26px;margin-bottom:20px}
+  .score-section h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px}
+  .score-table{width:100%;border-collapse:collapse}
+  .score-table th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:6px 10px;text-align:left;border-bottom:1px solid var(--border)}
+  .score-table td{padding:8px 10px;border-bottom:1px solid rgba(37,42,56,.5);font-size:13px}
+  .score-table input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:4px 8px;width:70px;text-align:center}
+  .score-table input:focus{outline:none;border-color:var(--gold)}
+  .add-score-row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .add-score-row input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:6px 10px;width:100px;text-align:center}
+  .add-score-row input:focus{outline:none;border-color:var(--gold)}
+  .btn-add{color:var(--gold);border-color:rgba(232,208,124,.3);background:rgba(232,208,124,.06);font-size:11px;padding:6px 14px}
+
+  @media(max-width:680px){
+    .stat-row{grid-template-columns:1fr 1fr}
+    .today-card{flex-direction:column;align-items:flex-start}
+    .session-title{white-space:normal}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">PSAT Tracker '26</div>
+  <div class="nav-right">
+    <div class="streak-badge" id="streakBadge">🔥 0-day streak</div>
+    <div class="exam-badge" id="examBadge">— days to exam</div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- TODAY -->
+  <div class="today-card" id="todayCard">
+    <div>
+      <div class="today-label">Today's Session</div>
+      <div class="today-title" id="todayTitle">Loading…</div>
+      <div class="today-meta" id="todayMeta"></div>
+    </div>
+    <div class="today-actions" id="todayActions"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value" id="statDone" style="color:var(--green)">0</div>
+      <div class="stat-sub" id="statTotal">of 0 sessions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Missed</div>
+      <div class="stat-value" id="statMissed" style="color:var(--red)">0</div>
+      <div class="stat-sub">missed or pending</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Phase</div>
+      <div class="stat-value" id="statPhase" style="color:var(--gold)">1</div>
+      <div class="stat-sub" id="statPhaseName">Foundation</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Completion</div>
+      <div class="stat-value" id="statPct" style="color:var(--both)">0%</div>
+      <div class="stat-sub">of past sessions</div>
+    </div>
+  </div>
+
+  <!-- MISSED SESSIONS (shown only if any) -->
+  <div class="missed-section" id="missedSection" style="display:none">
+    <div class="missed-header">⚠ Missed &amp; Rescheduled Sessions</div>
+    <div id="missedList"></div>
+  </div>
+
+  <!-- PHASE TABS -->
+  <div class="phase-tabs">
+    <button class="phase-tab active" onclick="switchPhase(1,this)">Phase 1 · Apr–Jun</button>
+    <button class="phase-tab" onclick="switchPhase(2,this)">Phase 2 · Jul–Aug</button>
+    <button class="phase-tab" onclick="switchPhase(3,this)">Phase 3 · Sep–Oct</button>
+    <button class="phase-tab" onclick="switchPhase(0,this)">📊 Score Log</button>
+  </div>
+
+  <!-- PHASE PANELS -->
+  <div class="phase-panel active" id="panel-1"></div>
+  <div class="phase-panel" id="panel-2"></div>
+  <div class="phase-panel" id="panel-3"></div>
+
+  <!-- SCORE LOG PANEL -->
+  <div class="phase-panel" id="panel-0">
+    <div class="score-section">
+      <h3>Practice Test Score Log</h3>
+      <table class="score-table">
+        <thead><tr><th>#</th><th>Date</th><th>English</th><th>Math</th><th>Total</th><th>Notes</th></tr></thead>
+        <tbody id="scoreBody"></tbody>
+      </table>
+      <div class="add-score-row">
+        <input id="newDate" type="date" placeholder="Date">
+        <input id="newEng" type="number" placeholder="Eng" min="200" max="760">
+        <input id="newMath" type="number" placeholder="Math" min="200" max="760">
+        <input id="newNotes" type="text" placeholder="Notes" style="width:180px">
+        <button class="btn btn-add" onclick="addScore()">+ Add Test</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- RESCHEDULE MODAL -->
+<div id="rescheduleModal">
+  <div class="modal-box">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Reschedule Session</div>
+    <div id="rescheduleSessionTitle" style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:20px;line-height:1.3"></div>
+    <div style="margin-bottom:24px">
+      <label class="modal-label">New Date</label>
+      <input id="rescheduleDate" type="date" class="modal-input">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-reschedule" onclick="confirmReschedule()" style="flex:1;justify-content:center;padding:11px">Save</button>
+      <button class="btn" onclick="closeReschedule()" style="color:var(--muted);border-color:var(--border);background:transparent">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const EXAM_DATE = new Date('2026-10-17T08:00:00-05:00');
+
+// Session definitions per phase:
+// [dayOfWeek(0=Sun), durationMin, title, type, startAfter?]
+// startAfter: optional 'YYYY-MM-DD' — only generate sessions strictly AFTER this date
+// type: eng | math | both
+const PHASE_DEFS = {
+  1: {
+    name:'Foundation & Diagnostics', short:'Foundation',
+    color:'var(--eng)', start:'2026-04-11', end:'2026-06-28',
+    sessions:[
+      // Weekends: all of Phase 1
+      [0,  90, '📖 Secondary Skill Drills + Week Preview',      'both'],
+      [6, 120, '⏱ Full Timed Module(s) + Error Log',            'both'],
+      // Weekdays: start May 18 (no weekday sessions Apr 11–May 15)
+      [1,  45, '📚 English: Command of Evidence & Vocab',        'eng',  '2026-05-15'],
+      [2,  45, '📐 Math: Algebra & Khan Academy Drills',         'math', '2026-05-15'],
+      [3,  45, '📋 Mixed Review: English + Math Timed Practice', 'both', '2026-05-15'],
+      // Thursday added Jun 16 (accelerated pace to make up Apr–May gap)
+      [4,  45, '📋 Makeup: Mixed Review + Error Analysis',       'both', '2026-06-15'],
+    ]
+  },
+  2: {
+    name:'Simulate & Stress-Test', short:'Simulate',
+    color:'var(--math)', start:'2026-07-06', end:'2026-08-30',
+    sessions:[
+      // Accelerated: Mon–Thu + Sat/Sun all phase
+      [0,  90, '📐 Second Module + Desmos/Stats Drill',          'math'],
+      [1,  45, '📝 Error Log Deep Dive',                         'eng'],
+      [2,  45, '📐 Targeted Math Drills',                        'math'],
+      [3,  45, '📋 Cross-Topic Mixed Practice — Timed Set',      'both'],
+      [4,  60, '📐 Math Deep Dive: Complex Problems & Review',   'math'],
+      [6, 120, '⏱ Full Bluebook Test / RW Skill Block',         'both'],
+    ]
+  },
+  3: {
+    name:'Sharpen & Taper', short:'Sharpen',
+    color:'var(--gold)', start:'2026-09-07', end:'2026-10-17',
+    sessions:[
+      // Accelerated: Mon–Thu + Sat (Sat stops Oct 3)
+      [1,  45, '📚 RW Timed Module + Error Review',              'eng'],
+      [2,  45, '📐 Math Timed Module + Error Review',            'math'],
+      [3,  45, '🎯 Weak Topic Drill + Pacing Strategy Review',   'both'],
+      [4,  45, '🧠 Targeted Weak Spot + Exam Readiness Check',  'both'],
+      [6, 120, '⏱ Full Practice Test (Sep only, stop Oct 3)',   'both'],
+    ]
+  }
+};
+
+// Generate all sessions as flat objects
+function buildSessions() {
+  const all = [];
+  for (const [ph, def] of Object.entries(PHASE_DEFS)) {
+    const phase = parseInt(ph);
+    let d = new Date(def.start + 'T12:00:00');
+    const end = new Date(def.end + 'T23:59:59');
+    while (d <= end) {
+      for (const sessSpec of def.sessions) {
+        const [dow, dur, title, type, startAfter] = sessSpec;
+        if (d.getDay() === dow) {
+          // Respect optional startAfter date
+          if (startAfter) {
+            const cutoff = new Date(startAfter + 'T23:59:59');
+            if (d <= cutoff) continue;
+          }
+          // Phase 3 Saturday: only through Oct 3
+          if (phase === 3 && dow === 6) {
+            if (d > new Date('2026-10-03T23:59:59')) continue;
+          }
+          const dateStr = d.toISOString().slice(0,10);
+          const start = new Date(dateStr + 'T00:00:00');
+          const endT  = new Date(dateStr + 'T23:59:59');
+          const id = `${phase}-${dow}-${dateStr}`;
+          all.push({ id, phase, date: new Date(d), start, end: endT, dur, title, type });
+        }
+      }
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  all.sort((a,b) => a.start - b.start);
+  return all;
+}
+
+const ALL_SESSIONS = buildSessions();
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────────────────
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+let STATUS      = load('psat_status',      {});  // id → 'complete'|'missed'|'rescheduled'
+let SCORES      = load('psat_scores',      []);  // [{date,eng,math,notes}]
+let RESCHEDULES = load('psat_reschedules', {}); // id → 'YYYY-MM-DD'
+
+// Pre-populate known session history (runs once per device)
+function initializeHistory() {
+  if (load('psat_history_init_v1', false)) return;
+  STATUS['1-6-2026-04-11'] = 'complete'; // Apr 11 (Sat) — completed ✓
+  STATUS['1-0-2026-04-12'] = 'missed';   // Apr 12 (Sun) — missed ✗
+  save('psat_status', STATUS);
+  save('psat_history_init_v1', true);
+}
+initializeHistory();
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmtDate(d) {
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+function fmtTime(d) {
+  return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+}
+function today0() { const t = new Date(); t.setHours(0,0,0,0); return t; }
+
+// Effective start/end/date — account for reschedules
+function effectiveStart(s) {
+  const r = RESCHEDULES[s.id];
+  const dateStr = r ? r : s.date.toISOString().slice(0,10);
+  return new Date(dateStr + 'T00:00:00');
+}
+function effectiveEnd(s) {
+  const r = RESCHEDULES[s.id];
+  const dateStr = r ? r : s.date.toISOString().slice(0,10);
+  return new Date(dateStr + 'T23:59:59');
+}
+function effectiveDate(s) {
+  const d = new Date(effectiveStart(s)); d.setHours(0,0,0,0); return d;
+}
+
+// ─── RESCHEDULE MODAL ────────────────────────────────────────────────────────
+let _rescheduleId = null;
+
+function openReschedule(id) {
+  _rescheduleId = id;
+  const s = ALL_SESSIONS.find(x => x.id === id);
+  document.getElementById('rescheduleSessionTitle').textContent =
+    s.title.replace(/^[^\s]+\s/, '');
+  // Default: tomorrow
+  const r = RESCHEDULES[id];
+  if (r) {
+    document.getElementById('rescheduleDate').value = r;
+  } else {
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('rescheduleDate').value = tomorrow.toISOString().slice(0,10);
+  }
+  document.getElementById('rescheduleModal').style.display = 'flex';
+}
+
+function closeReschedule() {
+  document.getElementById('rescheduleModal').style.display = 'none';
+  _rescheduleId = null;
+}
+
+function confirmReschedule() {
+  if (!_rescheduleId) return;
+  const dateVal = document.getElementById('rescheduleDate').value;
+  if (!dateVal) { alert('Please pick a date.'); return; }
+  RESCHEDULES[_rescheduleId] = dateVal;
+  STATUS[_rescheduleId] = 'rescheduled';
+  save('psat_reschedules', RESCHEDULES);
+  save('psat_status', STATUS);
+  closeReschedule();
+  renderAll();
+}
+
+// Close modal on backdrop click
+document.getElementById('rescheduleModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeReschedule();
+});
+
+// ─── TODAY SESSION ────────────────────────────────────────────────────────────
+function findTodaySessions() {
+  const t = today0().getTime();
+  return ALL_SESSIONS.filter(s => effectiveDate(s).getTime() === t);
+}
+function findNextSession() {
+  const t = today0();
+  return ALL_SESSIONS
+    .filter(s => effectiveDate(s) > t && STATUS[s.id] !== 'complete')
+    .sort((a,b) => effectiveDate(a) - effectiveDate(b))[0];
+}
+
+function renderToday() {
+  const todaySess = findTodaySessions();
+  const titleEl = document.getElementById('todayTitle');
+  const metaEl  = document.getElementById('todayMeta');
+  const actEl   = document.getElementById('todayActions');
+  const cardEl  = document.getElementById('todayCard');
+
+  if (!todaySess.length) {
+    const next = findNextSession();
+    if (next) {
+      titleEl.textContent = next.title.replace(/^[^\s]+\s/, '');
+      metaEl.textContent  = `Next up: ${fmtDate(effectiveDate(next))} · ${next.dur} min`;
+      actEl.innerHTML = '';
+    } else {
+      titleEl.textContent = '🎓 Exam day approaching!';
+      metaEl.textContent  = 'All sessions complete — rest up and stay sharp.';
+      actEl.innerHTML = '';
+    }
+    return;
+  }
+
+  const s = todaySess[0];
+  const st = STATUS[s.id];
+  cardEl.style.borderColor =
+    st === 'complete'    ? 'rgba(124,232,160,.3)' :
+    st === 'missed'      ? 'rgba(232,124,138,.3)' :
+    st === 'rescheduled' ? 'rgba(232,208,124,.3)' :
+                           'rgba(232,208,124,.25)';
+
+  titleEl.textContent = s.title.replace(/^[^\s]+\s/, '');
+  metaEl.textContent = `${fmtDate(effectiveDate(s))} · ${s.dur} min`;
+
+  if (st === 'complete') {
+    actEl.innerHTML = `<span style="color:var(--green);font-family:'DM Mono',monospace;font-size:12px">✓ Completed</span>`;
+  } else if (st === 'rescheduled') {
+    const r = RESCHEDULES[s.id];
+    const nd = r ? fmtDate(new Date(r+'T12:00:00')) : '';
+    actEl.innerHTML = `
+      <span style="color:var(--gold);font-family:'DM Mono',monospace;font-size:11px">↻ Moved to ${nd}</span>
+      <button class="btn btn-reschedule" onclick="openReschedule('${s.id}')">Change date</button>`;
+  } else if (st === 'missed') {
+    actEl.innerHTML = `<button class="btn btn-reschedule" onclick="openReschedule('${s.id}')">📅 Reschedule</button>`;
+  } else {
+    actEl.innerHTML = `
+      <button class="btn btn-complete" onclick="markSession('${s.id}','complete')">✓ Done</button>
+      <button class="btn btn-miss"     onclick="markSession('${s.id}','missed')">✗ Missed</button>`;
+  }
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const now = new Date();
+  const past = ALL_SESSIONS.filter(s => effectiveEnd(s) < now);
+  const done   = past.filter(s => STATUS[s.id] === 'complete').length;
+  const missed = ALL_SESSIONS.filter(s => STATUS[s.id] === 'missed').length;
+  const rescheduled = ALL_SESSIONS.filter(s => STATUS[s.id] === 'rescheduled').length;
+  const pct = past.length ? Math.round(done / past.length * 100) : 0;
+
+  document.getElementById('statDone').textContent   = done;
+  document.getElementById('statTotal').textContent  = `of ${ALL_SESSIONS.length} sessions`;
+  document.getElementById('statMissed').textContent = missed + rescheduled;
+  document.getElementById('statPct').textContent    = pct + '%';
+
+  const daysLeft = Math.max(0, Math.ceil((EXAM_DATE - now) / 86400000));
+  document.getElementById('examBadge').textContent  = `${daysLeft}d to exam`;
+
+  // Streak — consecutive completed sessions going backwards
+  let streak = 0;
+  const sorted = [...past].sort((a,b) => effectiveStart(b) - effectiveStart(a));
+  for (const s of sorted) {
+    if (STATUS[s.id] === 'complete') streak++;
+    else break;
+  }
+  document.getElementById('streakBadge').textContent = `🔥 ${streak}-session streak`;
+
+  const phase = now < new Date('2026-07-01') ? 1 : now < new Date('2026-09-01') ? 2 : 3;
+  document.getElementById('statPhase').textContent     = phase;
+  document.getElementById('statPhaseName').textContent = PHASE_DEFS[phase].short;
+}
+
+// ─── MISSED SECTION ───────────────────────────────────────────────────────────
+function renderMissed() {
+  const now = new Date();
+  const missed      = ALL_SESSIONS.filter(s => STATUS[s.id] === 'missed');
+  const rescheduled = ALL_SESSIONS.filter(s => STATUS[s.id] === 'rescheduled');
+  const sec  = document.getElementById('missedSection');
+  const list = document.getElementById('missedList');
+
+  if (!missed.length && !rescheduled.length) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  const missedHtml = missed.map(s => `
+    <div class="missed-item">
+      <div>
+        <div class="missed-date">${fmtDate(s.date)}</div>
+        <div class="missed-info">${s.title}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-reschedule" onclick="openReschedule('${s.id}')">📅 Reschedule</button>
+        <button class="btn btn-complete" onclick="markSession('${s.id}','complete')">Mark done</button>
+      </div>
+    </div>`).join('');
+
+  const rescheduledHtml = rescheduled.map(s => {
+    const r = RESCHEDULES[s.id];
+    const newDateStr = r ? fmtDate(new Date(r+'T12:00:00')) : '?';
+    const isPast = effectiveEnd(s) < now;
+    return `
+    <div class="missed-item" style="border-color:rgba(232,208,124,.15)">
+      <div>
+        <div class="missed-date" style="color:var(--gold)">↻ Rescheduled → ${newDateStr}</div>
+        <div class="missed-info">${s.title}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${isPast ? `<button class="btn btn-complete" onclick="markSession('${s.id}','complete')">Mark done</button>` : ''}
+        <button class="btn btn-reschedule" style="font-size:10px;padding:6px 12px" onclick="openReschedule('${s.id}')">Change date</button>
+        <button class="btn" style="color:var(--muted);border-color:var(--border);background:transparent;font-size:10px;padding:6px 12px"
+          onclick="STATUS['${s.id}']='missed';delete RESCHEDULES['${s.id}'];save('psat_status',STATUS);save('psat_reschedules',RESCHEDULES);renderAll()">Undo</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = missedHtml + rescheduledHtml;
+}
+
+// ─── PHASE PANELS ─────────────────────────────────────────────────────────────
+function renderPhasePanel(phase) {
+  const sessions = ALL_SESSIONS.filter(s => s.phase === phase);
+  const now    = new Date();
+  const todayD = today0();
+
+  // Group by week using effective date (rescheduled sessions move to new week)
+  const weeks = {};
+  for (const s of sessions) {
+    const ed  = effectiveDate(s);
+    const day  = ed.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    const mon  = new Date(ed); mon.setDate(ed.getDate() + diff); mon.setHours(0,0,0,0);
+    const key  = mon.toISOString().slice(0,10);
+    if (!weeks[key]) weeks[key] = { mon, sessions:[] };
+    weeks[key].sessions.push(s);
+  }
+
+  const def = PHASE_DEFS[phase];
+
+  let html = `<div style="margin-bottom:16px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:${def.color};margin-bottom:4px">Phase ${phase}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:4px">${def.name}</div>
+  </div>`;
+
+  for (const [wk, { mon, sessions: wsess }] of Object.entries(weeks).sort()) {
+    const wDone  = wsess.filter(s => STATUS[s.id] === 'complete').length;
+    const wLabel = fmtDate(mon) + ' – ' + fmtDate(new Date(mon.getTime() + 6*86400000));
+
+    html += `<div class="week-group">
+      <div class="week-header">
+        <span>Week of ${wLabel}</span>
+        <span class="week-progress-text">${wDone}/${wsess.length} done</span>
+      </div>`;
+
+    for (const s of wsess.sort((a,b) => effectiveStart(a) - effectiveStart(b))) {
+      const ed      = effectiveDate(s);
+      const isToday = ed.getTime() === todayD.getTime();
+      const isPast  = effectiveEnd(s) < now;
+      const st      = STATUS[s.id];
+      const isRescheduled = st === 'rescheduled';
+
+      let rowCls = 'session-row';
+      if      (st === 'complete')    rowCls += ' complete';
+      else if (st === 'missed')      rowCls += ' missed';
+      else if (isRescheduled)        rowCls += ' rescheduled';
+      else if (isToday)              rowCls += ' today-row';
+
+      const checkIcon = st === 'complete' ? '✓' : st === 'missed' ? '✗' : isRescheduled ? '↻' : '';
+      const dotCls    = `type-dot dot-${s.type}`;
+
+      let dateLabel = fmtDate(ed);
+      if (isRescheduled) dateLabel = '↻ ' + dateLabel;
+
+      let rightEl = `<span class="session-dur">${s.dur}m</span>`;
+      if (st === 'missed') {
+        rightEl = `<button class="btn btn-reschedule" style="padding:5px 10px;font-size:10px"
+          onclick="event.stopPropagation();openReschedule('${s.id}')">Reschedule</button>`;
+      } else if (isRescheduled) {
+        rightEl = `<button class="btn btn-reschedule" style="padding:5px 10px;font-size:10px;opacity:.75"
+          onclick="event.stopPropagation();openReschedule('${s.id}')">Change date</button>`;
+      }
+
+      html += `<div class="${rowCls}" onclick="toggleSession('${s.id}','${isPast}')">
+        <div class="check-box"><span class="check-icon">${checkIcon}</span></div>
+        <div class="${dotCls}"></div>
+        <div class="session-info">
+          <div class="session-date">${dateLabel}</div>
+          <div class="session-title">${s.title}</div>
+        </div>
+        ${rightEl}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById('panel-' + phase).innerHTML = html;
+}
+
+// ─── SCORE LOG ────────────────────────────────────────────────────────────────
+function renderScoreLog() {
+  const tbody = document.getElementById('scoreBody');
+  if (!SCORES.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:16px">No tests logged yet</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = SCORES.map((s,i) => {
+    const total = (s.eng && s.math) ? parseInt(s.eng) + parseInt(s.math) : '—';
+    const color = total >= 1480 ? 'var(--green)' : total >= 1400 ? 'var(--gold)' : 'var(--text)';
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${s.date}</td>
+      <td style="color:var(--eng);font-weight:600">${s.eng || '—'}</td>
+      <td style="color:var(--math);font-weight:600">${s.math || '—'}</td>
+      <td style="color:${color};font-weight:700">${total}</td>
+      <td style="color:var(--muted);font-size:12px">${s.notes || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function addScore() {
+  const date  = document.getElementById('newDate').value;
+  const eng   = document.getElementById('newEng').value;
+  const math  = document.getElementById('newMath').value;
+  const notes = document.getElementById('newNotes').value;
+  if (!date || !eng || !math) return alert('Please enter date, English score, and Math score.');
+  SCORES.push({ date, eng: parseInt(eng), math: parseInt(math), notes });
+  save('psat_scores', SCORES);
+  renderScoreLog();
+  ['newDate','newEng','newMath','newNotes'].forEach(id => document.getElementById(id).value = '');
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function markSession(id, status) {
+  STATUS[id] = status;
+  save('psat_status', STATUS);
+  renderAll();
+}
+
+function toggleSession(id, isPast) {
+  const cur = STATUS[id];
+  if (cur === 'complete') {
+    if (confirm('Unmark this session as complete?')) delete STATUS[id];
+    else return;
+  } else if (cur === 'rescheduled') {
+    if (isPast === 'true') {
+      if (confirm('Mark this rescheduled session as completed?')) {
+        STATUS[id] = 'complete';
+        delete RESCHEDULES[id];
+        save('psat_reschedules', RESCHEDULES);
+      } else return;
+    }
+    // Future rescheduled sessions: do nothing on tap (use buttons instead)
+  } else if (!cur && isPast === 'true') {
+    const choice = confirm('Mark this session as completed?\n(Cancel to mark as missed instead)');
+    STATUS[id] = choice ? 'complete' : 'missed';
+  } else if (!cur) {
+    STATUS[id] = 'complete';
+  } else if (cur === 'missed') {
+    openReschedule(id);
+    return;
+  }
+  save('psat_status', STATUS);
+  renderAll();
+}
+
+function switchPhase(phase, btn) {
+  document.querySelectorAll('.phase-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.phase-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + phase).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── RENDER ALL ───────────────────────────────────────────────────────────────
+function renderAll() {
+  renderToday();
+  renderStats();
+  renderMissed();
+  renderPhasePanel(1);
+  renderPhasePanel(2);
+  renderPhasePanel(3);
+  renderScoreLog();
+}
+
+renderAll();
+
+// Auto-detect missed (past sessions not marked)
+function autoDetectMissed() {
+  const now = new Date();
+  let changed = false;
+  for (const s of ALL_SESSIONS) {
+    const ee = effectiveEnd(s);
+    if (ee < now && !STATUS[s.id]) {
+      // Flag as missed only after the day has fully passed (next day)
+      const hoursAgo = (now - ee) / 3600000;
+      if (hoursAgo > 0.5) {
+        STATUS[s.id] = 'missed';
+        changed = true;
+      }
+    }
+  }
+  if (changed) { save('psat_status', STATUS); renderAll(); }
+}
+autoDetectMissed();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
